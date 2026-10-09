@@ -37,10 +37,10 @@ h1,h2,h3,h4{font-family:var(--f-display);margin:0;text-wrap:balance;line-height:
 p{margin:0}
 
 /* One phone-sized column; on wide screens it floats as a card. */
-.app{position:relative;max-width:520px;margin:0 auto;height:100dvh;background:var(--surface);display:flex;flex-direction:column;overflow:hidden}
+.app{position:relative;max-width:520px;margin:0 auto;height:100%;background:var(--surface);display:flex;flex-direction:column;overflow:hidden}
 @media (min-width:640px){
-  body{padding:20px 0}
-  .app{height:calc(100dvh - 40px);border-radius:32px;border:2px solid var(--line);box-shadow:0 30px 60px -30px rgba(10,30,50,.35)}
+  body{padding-block:20px}
+  .app{border-radius:32px;border:2px solid var(--line);box-shadow:0 30px 60px -30px rgba(10,30,50,.35)}
 }
 .scroll{flex:1;overflow-y:auto;overflow-x:hidden;min-height:0}
 
@@ -112,6 +112,7 @@ p{margin:0}
 .unit.locked{filter:saturate(.3);opacity:.8}
 .path{position:relative;display:flex;flex-direction:column;align-items:center;gap:26px;padding:30px 0 34px}
 .node-wrap{position:relative;display:flex;flex-direction:column;align-items:center}
+.node-wrap.is-current{margin-top:26px}  /* room for the BẮT ĐẦU tag above the stars of the node before */
 .node{width:72px;height:66px;border-radius:50%;border:0;display:grid;place-items:center;position:relative;transition:transform .08s;font-family:var(--f-display);font-size:26px;font-weight:800}
 .node:active{transform:translateY(4px)}
 .node.done{background:var(--gold);box-shadow:0 7px 0 var(--gold-deep);color:#fff}

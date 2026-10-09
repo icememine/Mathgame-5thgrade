@@ -154,7 +154,7 @@ function vLearn() {
         ? `<div class="pop locked" style="${dx}--pop-arrow:var(--surface)"><h4>${info.title}</h4><p style="color:var(--muted)">Hoàn thành các bài phía trên để mở khoá.</p><button class="btn" disabled>Đang khoá</button></div>`
         : `<div class="pop ${st === 'done' ? 'done' : ''}" style="${dx}--pop-arrow:var(--${st === 'done' ? 'gold' : 'jade'})"><h4>${info.title}</h4><p>${info.sub}${st === 'done' && n.kind === 'lesson' ? ' · đã xong, ôn lại để lấy 3 sao' : ''}</p>
            <button class="btn" data-start="${n.key}">${st === 'done' ? 'Học lại' : 'Bắt đầu'} · +${info.xp} XP</button>${n.kind === 'lesson' ? `<button class="linkbtn" data-tip="${n.id}">Xem ghi nhớ</button>` : ''}</div>`;
-      html += `<div class="node-wrap" style="transform:translateX(${z}px);${open ? 'z-index:4' : ''}">
+      html += `<div class="node-wrap ${i === cur && !open ? 'is-current' : ''}" style="transform:translateX(${z}px);${open ? 'z-index:4' : ''}">
         ${i === cur && !open ? '<div class="start-tip">BẮT ĐẦU</div><div class="ring"></div>' : ''}
         <button class="node ${st} ${n.kind === 'lesson' ? '' : n.kind}" data-node="${n.key}" aria-label="${esc(info.title)}">${label}</button>${stars}${pop}</div>`;
     });
