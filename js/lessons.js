@@ -36,6 +36,9 @@ function randDec(lo, hi, dp) {
   let f = ''; for (let k = 0; k < dp - 1; k++) f += R.int(0, 9); f += R.int(1, 9);
   return `${i}.${f}`;
 }
+const lt = x => String(x).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+/* Hiệu–tỉ problems are dull when n − m = 1 (one part = the difference), so make that rare. */
+const gapPair = (max, minM = 1) => { let p; do { p = coprimePair(max, minM); } while (p[1] - p[0] === 1 && R.chance(.8)); return p; };
 const uniqBy = (arr, key) => { const s = new Set(); return arr.filter(x => { const k = key(x); if (s.has(k)) return false; s.add(k); return true; }); };
 
 /* =====================================================================
@@ -62,12 +65,12 @@ const L6 = [
     const s = [[`Tỉ số của ${a} và ${b} viết là ${RT(b, a)}.`, false], [`Tỉ số của ${a} và ${b} viết là ${F(a, b)}.`, true], [`${RT(a, b)} và ${F(a, b)} là hai cách viết của cùng một tỉ số.`, true]][k];
     return tf({ prompt: s[0], answer: s[1], explain: `Tỉ số của ${a} và ${b} là ${RT(a, b)} hay ${F(a, b)} (đúng thứ tự: ${a} trước, ${b} sau).` }); },
   () => { const T = R.pick([
-      { a: 'Châu', b: 'Nguyên', what: 'Số tiền tiết kiệm' }, { a: 'Khôi', b: 'Minh', what: 'Số vở' }, { a: 'đội A', b: 'đội B', what: 'Số bàn thắng' }]);
+      { a: 'Châu', b: 'Nguyên', what: 'Số tiền tiết kiệm', both: 'cả hai bạn' }, { a: 'Khôi', b: 'Minh', what: 'Số vở', both: 'cả hai bạn' }, { a: 'đội A', b: 'đội B', what: 'Số bàn thắng', both: 'cả hai đội' }]);
     const k = R.int(2, 5), ask = R.int(0, 2);
-    const qs = [[`của ${T.b} và của ${T.a}`, 1, k], [`của ${T.a} và của ${T.b}`, k, 1], [`của ${T.b} và tổng của cả hai`, 1, k + 1]][ask];
+    const qs = [[`của ${T.b} và của ${T.a}`, 1, k], [`của ${T.a} và của ${T.b}`, k, 1], [`của ${T.b} và tổng ${T.what.toLowerCase()} của ${T.both}`, 1, k + 1]][ask];
     return inp({ kind: 'Quan sát sơ đồ', prompt: `Viết tỉ số giữa ${T.what.toLowerCase()} ${qs[0]}.`,
       ctx: `<p>${T.what} của ${T.a} gấp ${k} lần ${T.what.toLowerCase()} của ${T.b}.</p>${vSeg(1, k, 'none', '', [cap(T.b), cap(T.a)])}`,
-      spec: frac(qs[1], qs[2]), explain: `${cap(T.b)} ứng với 1 phần, ${T.a} ứng với ${k} phần như thế. Tỉ số cần tìm là ${RT(qs[1], qs[2])} hay ${F(qs[1], qs[2])}.` }); },
+      spec: frac(qs[1], qs[2]), explain: `${cap(T.b)} ứng với 1 phần, ${T.a} ứng với ${k} phần như thế${ask === 2 ? `, cả hai ứng với 1 + ${k} = ${k + 1} phần` : ''}. Tỉ số cần tìm là ${RT(qs[1], qs[2])} hay ${F(qs[1], qs[2])}.` }); },
   () => { let a, b, c, d; do { [a, b] = distinctPair(2, 15); [c, d] = distinctPair(2, 15); } while (new Set([a, b, c, d]).size < 4);
     return match({ prompt: 'Nối mỗi tỉ số với cách viết đúng', pairs: R.shuffle([[`Tỉ số của ${a} và ${b}`, RT(a, b)], [`Tỉ số của ${b} và ${a}`, RT(b, a)], [`Tỉ số của ${c} và ${d}`, RT(c, d)], [`Tỉ số của ${d} và ${c}`, RT(d, c)]]),
       explain: 'Chú ý thứ tự: tỉ số của a và b viết là a : b, khác với tỉ số của b và a.' }); }
@@ -95,15 +98,15 @@ function sumTemplate() {
 }
 function diffTemplate() {
   const t = R.int(0, 4);
-  if (t === 0) { const rev = R.chance(.6), [m, n] = coprimePair(7, rev ? 2 : 1), u = R.int(2, 40);
+  if (t === 0) { const rev = R.chance(.6), [m, n] = gapPair(8, rev ? 2 : 1), u = R.int(2, 40);
     return { m, n, u, unit: '', names: ['Số bé', 'Số lớn'], text: `Hiệu của hai số là ${fmtInt(u * (n - m))}. Tỉ số của hai số là ${rev ? F(n, m) : F(m, n)}.`, ask: ['Tìm số bé.', 'Tìm số lớn.'] }; }
-  if (t === 1) { const [m, n] = coprimePair(7, 2), u = R.int(3, 15);
+  if (t === 1) { const [m, n] = gapPair(8, 2), u = R.int(3, 15);
     return { m, n, u, unit: 'chiếc', names: ['Hộp nhỏ', 'Hộp to'], text: `Hộp to có nhiều hơn hộp nhỏ ${u * (n - m)} chiếc bút màu. Tỉ số giữa số bút màu của hộp to và số bút màu của hộp nhỏ là ${F(n, m)}.`, ask: ['Hộp nhỏ có bao nhiêu chiếc bút màu?', 'Hộp to có bao nhiêu chiếc bút màu?'] }; }
-  if (t === 2) { const [m, n] = coprimePair(8), u = R.int(2, 12);
+  if (t === 2) { const [m, n] = gapPair(8), u = R.int(2, 12);
     return { m, n, u, unit: 'm', names: ['Dây xanh', 'Dây đỏ'], text: `Cuộn dây màu đỏ dài hơn cuộn dây màu xanh ${u * (n - m)} m. Biết rằng cuộn dây màu xanh dài bằng ${F(m, n)} cuộn dây màu đỏ.`, ask: ['Tính độ dài cuộn dây màu xanh.', 'Tính độ dài cuộn dây màu đỏ.'] }; }
-  if (t === 3) { const [m, n] = coprimePair(8, 2), u = R.int(3, 16);
+  if (t === 3) { const [m, n] = gapPair(8, 2), u = R.int(3, 16);
     return { m, n, u, unit: 'cây', names: ['Cây cam', 'Cây xoài'], text: `Số cây cam trong vườn ít hơn số cây xoài là ${u * (n - m)} cây. Tỉ số của số cây xoài và số cây cam là ${F(n, m)}.`, ask: ['Trong vườn có bao nhiêu cây cam?', 'Trong vườn có bao nhiêu cây xoài?'] }; }
-  const n = R.int(2, 5), u = R.int(8, 40);
+  const n = R.chance(.8) ? R.int(3, 5) : 2, u = R.int(8, 40);
   return { m: 1, n, u, unit: 'chiếc', names: ['Trực tiếp', 'Trực tuyến'], text: `Trong một quý, số ti vi bán trực tiếp tại cửa hàng ít hơn số ti vi bán trực tuyến là ${u * (n - 1)} chiếc. Số ti vi bán trực tuyến gấp ${n} lần số ti vi bán trực tiếp.`, ask: ['Tính số ti vi bán trực tiếp.', 'Tính số ti vi bán trực tuyến.'] };
 }
 const unitTxt = u => u ? NB + u : '';
@@ -127,7 +130,7 @@ const L7 = [
       explain: `Tổng số phần bằng nhau: ${T.m} + ${T.n} = ${T.m + T.n} (phần).` + (step ? `<br>Giá trị một phần: ${fmtInt(T.u * (T.m + T.n))} : ${T.m + T.n} = ${fmtInt(T.u)}.` : '') }); },
   () => { const [m, n] = coprimePair(6), u = R.int(2, 9), S = u * (m + n);
     return sel({ prompt: `Tổng hai số là ${S}, tỉ số của hai số là ${F(m, n)}. Hai số đó là:`,
-      correct: `${u * m} và ${u * n}`, wrong: [`${m} và ${n}`, `${u * m + u} và ${u * n - u}`, `${u * (n - m)} và ${S - u * (n - m)}`, `${u * m - 1} và ${u * n + 1}`],
+      correct: `${u * m} và ${u * n}`, wrong: [`${m} và ${n}`, `${u * m + 1} và ${u * n - 1}`, `${u * (n - m)} và ${S - u * (n - m)}`, `${u * m - 1} và ${u * n + 1}`],
       explain: `Tổng số phần: ${m} + ${n} = ${m + n}. Một phần: ${S} : ${m + n} = ${u}. Số bé: ${u} × ${m} = ${u * m}; số lớn: ${u} × ${n} = ${u * n}.` }); }
 ];
 const L8 = [
@@ -140,7 +143,7 @@ const L8 = [
     return inp({ kind: 'Từng bước', prompt: step ? 'Theo sơ đồ, giá trị của một phần bằng bao nhiêu?' : 'Theo sơ đồ, hiệu số phần bằng nhau là bao nhiêu?',
       ctx: `<p>${T.text}</p>${vSeg(T.m, T.n, 'diff', fmtInt(T.u * (T.n - T.m)), T.names)}`, spec: num(step ? T.u : T.n - T.m, step ? T.unit : 'phần'),
       explain: `Hiệu số phần bằng nhau: ${T.n} − ${T.m} = ${T.n - T.m} (phần).` + (step ? `<br>Giá trị một phần: ${fmtInt(T.u * (T.n - T.m))} : ${T.n - T.m} = ${fmtInt(T.u)}.` : '') }); },
-  () => { const [m, n] = coprimePair(5), u = R.int(2, 6), w = u * m, l = u * n;
+  () => { const [m, n] = gapPair(6), u = R.int(2, 6), w = u * m, l = u * n;
     return inp({ kind: 'Giải toán', prompt: 'Tính diện tích mảnh vườn đó.',
       ctx: `<p>Một mảnh vườn hình chữ nhật có chiều rộng ngắn hơn chiều dài ${u * (n - m)} m. Chiều rộng bằng ${F(m, n)} chiều dài.</p>`,
       spec: num(w * l, 'm²'), explain: `Hiệu số phần: ${n} − ${m} = ${n - m}. Một phần: ${u * (n - m)} : ${n - m} = ${u} (m).<br>Chiều rộng: ${u} × ${m} = ${w} (m); chiều dài: ${u} × ${n} = ${l} (m).<br>Diện tích: ${w} × ${l} = <b>${fmtInt(w * l)} m²</b>.` }); },
@@ -160,10 +163,13 @@ const L9 = [
     return inp({ kind: 'Quan sát bảng', prompt: 'Số thích hợp thay cho dấu ? là bao nhiêu?',
       ctx: vTable([[T[0], ...xs.map(fmtInt)], [T[1], ...xs.map((x, i) => i === hide ? '<b class="qm">?</b>' : fmtInt(x * k))]]),
       spec: num(xs[hide] * k), explain: `${xs[hide]} gấp ${xs[hide] / x1} lần ${x1}, nên số tương ứng cũng gấp lên bấy nhiêu lần: ${fmtInt(x1 * k)} × ${xs[hide] / x1} = ${fmtInt(xs[hide] * k)}.` }); },
-  () => { const x1 = R.int(1, 4), k = R.int(2, 9), t = R.pick([2, 3, 4]), dec = R.chance(.35);
-    return inp({ kind: 'Quan sát bảng', prompt: dec ? `Khi số can mật ong giảm đi ${t} lần thì số lít mật ong giảm đi bao nhiêu lần?` : `Khi số can mật ong tăng lên ${t} lần thì số lít mật ong tăng lên bao nhiêu lần?`,
-      ctx: vTable([['Số can mật ong', x1, 2 * x1, 4 * x1].map(String), ['Số lít mật ong', x1 * k, 2 * x1 * k, 4 * x1 * k].map(String)]),
-      spec: num(t, 'lần'), explain: `Số can gấp lên (giảm đi) bao nhiêu lần thì số lít mật ong cũng gấp lên (giảm đi) bấy nhiêu lần: ${t} lần.` }); },
+  () => { const x1 = R.int(1, 4), k = R.int(2, 9), table = vTable([['Số can mật ong', x1, 2 * x1, 4 * x1].map(String), ['Số lít mật ong', x1 * k, 2 * x1 * k, 4 * x1 * k].map(String)]);
+    if (R.chance(.5)) { const t = R.pick([2, 4]), dec = R.chance(.4);
+      return inp({ kind: 'Quan sát bảng', prompt: dec ? `Khi số can mật ong giảm đi ${t} lần thì số lít mật ong giảm đi bao nhiêu lần?` : `Khi số can mật ong gấp lên ${t} lần thì số lít mật ong gấp lên bao nhiêu lần?`, ctx: table,
+        spec: num(t, 'lần'), explain: dec ? `Từ ${4 * x1} can còn ${4 * x1 / t} can (giảm ${t} lần) thì số lít từ ${4 * x1 * k} còn ${4 * x1 * k / t} (cũng giảm ${t} lần).` : `Từ ${x1} can lên ${x1 * t} can (gấp ${t} lần) thì số lít từ ${x1 * k} lên ${x1 * k * t} (cũng gấp ${t} lần).` }); }
+    const t = R.pick([3, 5, 6, 8]);
+    return inp({ kind: 'Quan sát bảng', prompt: `Nếu có ${x1 * t} can mật ong như thế thì có bao nhiêu lít mật ong?`, ctx: table,
+      spec: num(x1 * k * t, 'l'), explain: `${x1 * t} can gấp ${x1} can số lần là ${x1 * t} : ${x1} = ${t} (lần). Số lít mật ong: ${x1 * k} × ${t} = <b>${x1 * k * t} l</b>.` }); },
   () => { const it = R.pick([['quyển vở', 500], ['cái bút', 500], ['hộp sữa', 500], ['quyển truyện', 1000]]);
     const a = R.int(2, 6), p = R.int(it[1] === 500 ? 6 : 8, it[1] === 500 ? 24 : 30) * it[1], t = R.int(2, 5), b = R.chance(.6) ? a * t : R.int(a + 1, 15);
     const two = b % a === 0;
@@ -175,9 +181,9 @@ const L9 = [
   () => { const r = R.int(55, 70), T = R.int(1, 5);
     return inp({ kind: 'Giải toán', prompt: `Hỏi ${T} tấn thóc thì cho bao nhiêu ki-lô-gam gạo?`, ctx: `<p>Cứ 100 kg thóc thì cho ${r} kg gạo.</p>`,
       spec: num(T * 10 * r, 'kg'), explain: `Đổi ${T} tấn = ${fmtInt(T * 1000)} kg. ${fmtInt(T * 1000)} kg gấp 100 kg số lần là: ${fmtInt(T * 1000)} : 100 = ${T * 10} (lần).<br>Số gạo: ${r} × ${T * 10} = <b>${fmtInt(T * 10 * r)} kg</b>.` }); },
-  () => { const k = R.int(2, 5);
-    return sel({ prompt: `Mua vở cùng loại. Khi số quyển vở mua gấp lên ${k} lần thì số tiền phải trả:`, correct: `Cũng gấp lên ${k} lần`,
-      wrong: [`Giảm đi ${k} lần`, 'Không thay đổi', `Gấp lên ${k + 1} lần`], explain: `Số tiền phụ thuộc vào số quyển vở: số vở gấp lên ${k} lần thì số tiền cũng gấp lên ${k} lần.` }); }
+  () => { const k = R.int(2, 6), it = R.pick(['quyển vở', 'ki-lô-gam gạo', 'hộp bút', 'mét vải']), up = R.chance(.6), v = up ? 'gấp lên' : 'giảm đi', o = up ? 'giảm đi' : 'gấp lên';
+    return sel({ prompt: `Mua ${it} cùng loại. Khi số ${it} mua ${v} ${k} lần thì số tiền phải trả:`, correct: `Cũng ${v} ${k} lần`,
+      wrong: [`${cap(o)} ${k} lần`, 'Không thay đổi', `${cap(v)} ${k + 1} lần`], explain: `Số tiền phụ thuộc vào số ${it} mua: số ${it} ${v} ${k} lần thì số tiền cũng ${v} ${k} lần.` }); }
 ];
 
 /* =====================================================================
@@ -212,22 +218,22 @@ const L11 = [
       explain: `Có ${w} hình tròn tô màu đủ và ${F(n, d)} hình tròn → ${M(w, n, d)}, đọc là “${readMixed(w, n, d)}”.` }); },
   () => { const [w, n, d] = mixedRand();
     return sel({ prompt: `Hỗn số ${M(w, n, d)} đọc là:`, correct: cap(readMixed(w, n, d)),
-      wrong: [cap(readMixed(n, w, d)), cap(`${readInt(w)} phần ${readInt(n)} và ${readInt(d)}`), cap(readMixed(w, d, n))],
+      wrong: [cap(readMixed(n, w, d)), cap(`${readInt(w)} phần ${readInt(n)} và ${readInt(d)}`), cap(readMixed(w, d, n)), cap(`${readInt(w)} nhân ${readFrac(n, d)}`)],
       explain: `Đọc phần nguyên trước, rồi “và”, rồi đọc phần phân số: ${readMixed(w, n, d)}.` }); },
   () => { const [w, n, d] = mixedRand();
     return inp({ kind: 'Viết hỗn số', prompt: `Viết hỗn số: <i>${readMixed(w, n, d)}</i>.`, spec: mixed(w, n, d), explain: `${cap(readMixed(w, n, d))} viết là ${M(w, n, d)}.` }); },
   () => { const [w, n, d] = mixedRand(), part = R.int(0, 1);
     return sel({ prompt: `Hỗn số ${M(w, n, d)} có ${part ? 'phần phân số' : 'phần nguyên'} là:`, correct: part ? F(n, d) : String(w),
-      wrong: part ? [String(w), F(w, d), F(d, n)] : [F(n, d), String(n), String(d)].filter(s => s !== String(w)),
+      wrong: part ? [String(w), F(w, d), F(d, n), F(n, w + d)] : [F(n, d), String(n), String(d), String(w + 1), String(w * d + n)],
       explain: `${M(w, n, d)} có phần nguyên là ${w}, phần phân số là ${F(n, d)}.` }); },
   () => { const [w, n, d] = mixedRand(9, 10);
     return inp({ kind: 'Chuyển thành phân số', prompt: `Chuyển hỗn số ${M(w, n, d)} thành phân số.`, spec: frac(w * d + n, d),
       explain: `${M(w, n, d)} = ${F(`${w} × ${d} + ${n}`, d)} = ${F(w * d + n, d)}.` }); },
   () => { const [w, n, d] = mixedRand(4, 6), k = R.int(0, 3);
     const s = [[`Phần phân số của một hỗn số bao giờ cũng bé hơn đơn vị.`, true], [`${M(w, d + n, d)} là một hỗn số viết đúng.`, false], [`${M(w, n, d)} = ${w} + ${F(n, d)}`, true], [`${M(w, n, d)} = ${F(w * n, d)}`, false]][k];
-    return tf({ prompt: s[0], answer: s[1], explain: `Hỗn số ${M(w, n, d)} = ${w} + ${F(n, d)} = ${F(w * d + n, d)}. Phần phân số của hỗn số luôn bé hơn 1.` }); },
+    return tf({ prompt: s[0], answer: s[1], explain: k === 1 ? `Sai vì ${F(d + n, d)} > 1, mà phần phân số của hỗn số phải bé hơn đơn vị.` : `Hỗn số ${M(w, n, d)} = ${w} + ${F(n, d)} = ${F(w * d + n, d)}. Phần phân số của hỗn số luôn bé hơn 1.` }); },
   () => { const seen = new Set(), pairs = [];
-    while (pairs.length < 4) { const [w, n, d] = mixedRand(5, 8), key = (w * d + n) + '/' + d; if (seen.has(key)) continue; seen.add(key); pairs.push([M(w, n, d), F(w * d + n, d)]); }
+    while (pairs.length < 4) { const [w, n, d] = mixedRand(5, 8), key = (w * d + n) + '/' + d; if (seen.has(key) || gcd(n, d) !== 1) continue; seen.add(key); pairs.push([M(w, n, d), F(w * d + n, d)]); }
     return match({ prompt: 'Nối hỗn số với phân số bằng nó', pairs, explain: `Cách chuyển: ${M('a', 'b', 'c')} = ${F('a × c + b', 'c')}.` }); }
 ];
 
@@ -236,7 +242,7 @@ const L11 = [
    ===================================================================== */
 const L12 = [
   () => { const T = R.pick([10, 100, 1000]), n = R.int(1, T === 10 ? 99 : 999);
-    const wrong = R.shuffle([F(R.int(1, 50), R.pick([3, 7, 12, 25, 52])), F(T, R.int(3, 99)), F(R.int(1, 9), R.pick([3000, 200, 50, 20])), F(R.int(11, 99), R.pick([15, 30, 110]))]);
+    const wrong = R.shuffle([F(R.int(1, 50), R.pick([3, 7, 12, 25, 52])), F(T, R.pick([3, 7, 12, 25, 52, 75])), F(R.int(1, 9), R.pick([3000, 200, 50, 20])), F(R.int(11, 99), R.pick([15, 30, 110]))]);
     return sel({ prompt: 'Phân số nào dưới đây là phân số thập phân?', correct: F(n, T), wrong,
       explain: `Phân số có mẫu số là 10, 100, 1 000, … gọi là phân số thập phân. ${F(n, T)} có mẫu số ${fmtInt(T)}.` }); },
   () => { const pool = [[1, 2], [3, 2], [3, 4], [1, 4], [2, 5], [7, 5], [18, 25], [7, 20], [9, 50], [3, 8], [7, 40], [21, 250], [42, 60], [32, 80], [72, 400], [425, 5000], [9, 30], [12, 200]];
@@ -248,7 +254,7 @@ const L12 = [
     return inp({ kind: 'Viết phân số', prompt: `Viết phân số thập phân: <i>${cap(readFrac(n, T))}</i>.`, spec: frac(n, T, 'exact'), explain: `${cap(readFrac(n, T))} viết là ${F(n, T)}.` }); },
   () => { const k = R.int(1, 29), L = ['0', '1', '2', '3'];
     return sel({ prompt: 'Phân số thập phân nào ở vị trí được đánh dấu trên tia số?', ctx: vLine({ from: '0', to: '3', ticks: 30, labels: L, points: [{ v: String(k / 10), label: '?' }] }),
-      correct: F(k, 10), wrong: R.shuffle([F(k + 1, 10), F(k - 1 || k + 2, 10), F(k, 100), F(10, k)]),
+      correct: F(k, 10), wrong: [...R.shuffle([F(k + 1, 10), F(k - 1 || k + 2, 10), F(k, 100), F(10, k)]), F(k + 2, 10)],
       explain: `Từ 0 đến 1 chia thành 10 phần bằng nhau, mỗi vạch là ${F(1, 10)}. Điểm đánh dấu ở vạch thứ ${k} → ${F(k, 10)}.` }); },
   () => { const seen = new Set(), pairs = [];
     while (pairs.length < 4) { const T = R.pick([10, 100]), w = R.int(1, 9), n = R.int(1, T - 1); if (T === 100 && n % 10 === 0) continue;
@@ -298,9 +304,9 @@ const L14 = [
   () => decReadSel(unitsToDec(R.chance(.3) ? R.int(1, 9) : R.int(11, 99), 2).replace(/0$/, '1')),
   () => { let k; do { k = R.int(11, 89); } while (k % 10 === 0); const s = unitsToDec(k, 2);
     return sel({ prompt: 'Số thập phân nào ứng với điểm được đánh dấu trên tia số?', ctx: vLine({ from: (Math.floor(k / 10) / 10).toFixed(1), to: ((Math.floor(k / 10) + 1) / 10).toFixed(1), ticks: 10, labels: [(Math.floor(k / 10) / 10).toFixed(1), ((Math.floor(k / 10) + 1) / 10).toFixed(1)], points: [{ v: s, label: '?' }] }),
-      correct: fmtDec(trimDec(s)), wrong: R.shuffle([fmtDec(`0.${String(k).split('').reverse().join('')}`), fmtDec(trimDec(unitsToDec(k, 1))), fmtDec(trimDec(unitsToDec(k, 3))), fmtDec(trimDec(unitsToDec(k + 1, 2)))]),
+      correct: fmtDec(trimDec(s)), wrong: R.shuffle([fmtDec(`0.${String(k).split('').reverse().join('')}`), fmtDec(trimDec(unitsToDec(k, 1))), fmtDec(trimDec(unitsToDec(k, 3))), fmtDec(trimDec(unitsToDec(k + 1, 2)))]).concat(fmtDec(trimDec(unitsToDec(k - 1, 2)))),
       explain: `Giữa hai vạch dài chia 10 phần, mỗi phần là 0,01. Điểm đánh dấu là ${D(trimDec(s))}.` }); },
-  () => { const k = R.int(1, 99), s = unitsToDec(k, 2);
+  () => { let k; do { k = R.int(1, 99); } while (k % 10 === 0); const s = unitsToDec(k, 2);
     return inp({ kind: 'Viết số thập phân', prompt: `Viết số thập phân: <i>${readDec(s)}</i>.`, spec: num(k / 100, '', s), explain: `${readDecCap(s)} viết là ${D(s)}.` }); }
 ];
 const L15 = [
@@ -321,16 +327,16 @@ const L16 = [
   () => { const digits = R.sample([1, 2, 3, 4, 5, 6, 7, 8, 9], 6);
     const ip = R.int(1, 3), fp = R.int(1, 3), I = digits.slice(0, ip).join(''), Fd = digits.slice(ip, ip + fp).join(''), s = `${I}.${Fd}`;
     const pos = R.int(0, ip + fp - 1), d = (I + Fd)[pos], place = pos < ip ? String(pos - ip) : String(pos - ip + 1);
-    return sel({ prompt: `Trong số ${D(s)}, chữ số ${d} thuộc hàng nào?`, correct: cap(PLACES[place]),
+    return sel({ prompt: `Chữ số ${d} trong số ${D(s)} thuộc hàng nào?`, correct: cap(PLACES[place]),
       wrong: R.shuffle(Object.values(PLACES).filter(p => p !== PLACES[place]).map(cap)),
       explain: `${D(s)}: phần nguyên ${I}, phần thập phân ${Fd}. Chữ số ${d} thuộc ${PLACES[place]}.` }); },
   () => { const s = randDec(1, 99, R.int(1, 3)), [I, Fd] = s.split('.'), part = R.int(0, 1);
     return sel({ prompt: `Số thập phân ${D(s)} có ${part ? 'phần thập phân gồm các chữ số' : 'phần nguyên là'}:`, correct: part ? Fd.split('').join(', ') : I,
-      wrong: part ? [I.split('').join(', '), (I + Fd).split('').join(', '), Fd.slice(0, -1).split('').join(', ') || '0'] : [Fd, I + Fd, I.slice(0, -1) || '0'],
+      wrong: part ? [I.split('').join(', '), (I + Fd).split('').join(', '), Fd.slice(0, -1).split('').join(', ') || '0', Fd.split('').reverse().join(', ') + ', 0'] : [Fd, I + Fd, I.slice(0, -1) || '0', String(+I + 1)],
       explain: `Những chữ số bên trái dấu phẩy thuộc phần nguyên (${I}), bên phải dấu phẩy thuộc phần thập phân (${Fd}).` }); },
   () => { const ip = R.int(0, 99), dp = R.int(1, 3), fr = R.int(1, Math.pow(10, dp) - 1), s = decStr(ip, String(fr).padStart(dp, '0'));
     return inp({ kind: 'Viết số thập phân', prompt: `Viết số thập phân có: <i>${cap(readInt(ip))} đơn vị, ${readFrac(fr, Math.pow(10, dp))}</i>.`, spec: num(val(s), '', s),
-      explain: `${readInt(ip)} đơn vị → phần nguyên ${ip}; ${F(fr, Math.pow(10, dp))} → phần thập phân có ${dp} chữ số. Số đó là ${D(s)}.` }); },
+      explain: `${cap(readInt(ip))} đơn vị → phần nguyên ${ip}; ${F(fr, Math.pow(10, dp))} → phần thập phân có ${dp} chữ số. Số đó là ${D(s)}.` }); },
   () => decReadSel(randDec(2, 60, R.int(1, 3))),
   () => { const s = randDec(10, 299, R.int(1, 3));
     return inp({ kind: 'Viết số thập phân', prompt: `Viết số thập phân: <i>${readDec(s)}</i>.`, spec: num(val(s), '', s), explain: `${readDecCap(s)} viết là ${D(s)}.` }); },
@@ -360,12 +366,17 @@ const L17 = [
     return sel({ prompt: `Viết số tự nhiên ${w} thành số thập phân có ${k} chữ số ở phần thập phân:`, correct: fmtDec(`${w}.${'0'.repeat(k)}`),
       wrong: [fmtDec(`0.${String(w).padStart(k, '0')}`), fmtDec(`${w}.${'0'.repeat(k - 1)}1`), fmtDec(`${w * 10}.${'0'.repeat(k)}`), fmtDec(`${w}0`)],
       explain: `Mọi số tự nhiên viết được thành số thập phân có phần thập phân là các chữ số 0: ${w} = ${D(`${w}.${'0'.repeat(k)}`)}.` }); },
-  () => { const k = R.int(0, 3), claims = [[F(1, 2), true], [F(5, 10), true], ['0,5', true], ['0,05', false]], c = claims[k];
-    return tf({ prompt: `Hình vuông gồm 100 ô, đã tô màu 50 ô. Bạn nói: “Đã tô màu vào ${c[0]} hình.”`, ctx: vGrid(50, 'var(--gold)'), answer: c[1],
+  () => { const claims = [[F(1, 2), true], [F(5, 10), true], ['0,5', true], ['0,50', true], ['0,05', false], [F(5, 100), false], [F(1, 5), false], ['5,0', false]], c = R.pick(R.chance(.5) ? claims.slice(0, 4) : claims.slice(4)), who = R.pick(['Hoa', 'Linh', 'Đan', 'Dũng']);
+    return tf({ prompt: `Hình vuông gồm 100 ô, đã tô màu 50 ô. Bạn ${who} nói: “Đã tô màu vào ${c[0]} hình.” ${who} nói đúng hay sai?`, ctx: vGrid(50, 'var(--gold)'), answer: c[1],
       explain: `Đã tô 50 ô trên 100 ô: ${F(50, 100)} = ${F(5, 10)} = ${F(1, 2)} = 0,50 = 0,5 hình. Còn 0,05 = ${F(5, 100)}, chỉ là 5 ô.` }); },
-  () => { const d = R.int(1, 9), s = `0.${d}0`;
-    return tf({ prompt: `Lan nói rằng: “${D(s)} lớn hơn ${D('0.' + d)} vì ${d}0 lớn hơn ${d}.” Lan nói đúng hay sai?`, answer: false,
-      explain: `Sai. ${D(s)} = ${D('0.' + d)} vì thêm chữ số 0 vào bên phải phần thập phân không làm thay đổi số.` }); }
+  () => { const d = R.int(1, 9), i = R.int(0, 9), who = R.pick(['Lan', 'Minh', 'Khôi', 'Mai']), v = R.int(0, 2);
+    const a = `${i}.${d}0`, b = `${i}.${d}`, c = `${i}.0${d}`;
+    if (v === 0) return tf({ prompt: `${who} nói rằng: “${D(a)} lớn hơn ${D(b)} vì ${d}0 lớn hơn ${d}.” ${who} nói đúng hay sai?`, answer: false,
+      explain: `Sai. ${D(a)} = ${D(b)} vì viết thêm chữ số 0 vào bên phải phần thập phân thì số không thay đổi.` });
+    if (v === 1) return tf({ prompt: `${who} nói rằng: “${D(a)} = ${D(b)} vì bỏ chữ số 0 ở tận cùng bên phải phần thập phân thì số không đổi.” ${who} nói đúng hay sai?`, answer: true,
+      explain: `Đúng. ${D(a)} = ${D(b)}.` });
+    return tf({ prompt: `${who} nói rằng: “${D(c)} = ${D(b)} vì chỉ thêm một chữ số 0.” ${who} nói đúng hay sai?`, answer: false,
+      explain: `Sai. Chữ số 0 nằm ngay sau dấu phẩy làm ${d} chuyển từ hàng phần mười sang hàng phần trăm: ${D(c)} &lt; ${D(b)}.` }); }
 ];
 
 /* =====================================================================
@@ -376,7 +387,7 @@ function trickyPair() {
   if (t === 0) { const a = R.int(1, 50), b = randDec(a - 1, a - 1, 2); return [String(a), b]; }       // 7 ? 6,99
   if (t === 1) { const i = R.int(1, 30), x = randDec(i, i, 3), y = randDec(i, i, 2); return [x, y]; }                                 // 17,183 ? 17,09
   if (t === 2) { const s = randDec(1, 60, 1); return [s, s + '0']; }                                                                // 29,5 ? 29,50
-  if (t === 3) { const a = R.int(10, 99); return [`0.000${a}`, `0.00${R.int(1, 9)}`]; }                                            // 0,00041 ? 0,0005
+  if (t === 3) { const a = R.int(10, 99); return [`0.0${a}`, `0.0${R.int(1, 9)}`]; }                                                // 0,041 ? 0,05
   if (t === 4) { const i = R.int(1, 30); return [randDec(i, i, 1), randDec(i - 1 < 1 ? 1 : i - 1, i + 1, 2)]; }
   const a = randDec(1, 99, 2); return [a, a.replace(/(\d)$/, d => String((+d + R.int(1, 8)) % 10))];
 }
@@ -384,8 +395,8 @@ function compareExplain(a, b) {
   return sign => {
     const [ia] = a.split('.'), [ib] = b.split('.');
     if (sign === '=') return `${D(a)} = ${D(b)}: phần nguyên bằng nhau, phần thập phân bằng nhau (thêm hay bỏ chữ số 0 tận cùng không đổi giá trị).`;
-    if (ia !== ib) return `Phần nguyên khác nhau: ${ia} ${+ia > +ib ? '>' : '<'} ${ib}, nên ${D(a)} ${sign} ${D(b)}.`;
-    return `Phần nguyên bằng nhau (${ia}). So sánh lần lượt từng hàng ở phần thập phân, từ trái sang phải, đến khi gặp cặp chữ số khác nhau → ${D(a)} ${sign} ${D(b)}.`;
+    if (ia !== ib) return `Phần nguyên khác nhau: ${ia} ${+ia > +ib ? '&gt;' : '&lt;'} ${ib}, nên ${D(a)} ${lt(sign)} ${D(b)}.`;
+    return `Phần nguyên bằng nhau (${ia}). So sánh lần lượt từng hàng ở phần thập phân, từ trái sang phải, đến khi gặp cặp chữ số khác nhau → ${D(a)} ${lt(sign)} ${D(b)}.`;
   };
 }
 const L18 = [
@@ -400,7 +411,7 @@ const L18 = [
     do { items = uniqBy([randDec(i, i + 1, 2), randDec(i, i, 3), randDec(i, i + 1, 2), randDec(i - 1 < 1 ? 1 : i - 1, i, 2)], x => val(x)); } while (items.length < 4);
     const dir = R.chance(.5) ? 'asc' : 'desc';
     return order({ prompt: `Sắp xếp các số theo thứ tự từ ${dir === 'asc' ? 'bé đến lớn' : 'lớn đến bé'}. Chạm lần lượt từng số.`, items, dir,
-      explain: `Thứ tự đúng: ${items.slice().sort((x, y) => dir === 'asc' ? val(x) - val(y) : val(y) - val(x)).map(D).join(dir === 'asc' ? ' < ' : ' > ')}.` }); },
+      explain: `Thứ tự đúng: ${items.slice().sort((x, y) => dir === 'asc' ? val(x) - val(y) : val(y) - val(x)).map(D).join(dir === 'asc' ? ' &lt; ' : ' &gt; ')}.` }); },
   () => { const variant = R.int(0, 1), ip = R.int(1, 20), t = R.int(0, 9);
     if (variant === 0) { const z = R.int(2, 9), w = R.int(0, z - 1), A = `${ip},${t}<b class="qm">?</b>${z}`, B = `${ip}.${t}1${w}`;
       return inp({ kind: 'Tìm chữ số', prompt: `Tìm chữ số thích hợp cho ô ? : <span class="num">${A}</span> &lt; ${D(B)}`, spec: num(0),
@@ -429,18 +440,18 @@ const ROUND_TO = [[0, 'hàng đơn vị'], [1, 'hàng phần mười'], [2, 'hà
 const L19 = [
   () => { const [k, name] = R.pick(ROUND_TO), s = randDec(1, 300, k + R.int(1, 2)), r = roundDec(s, k);
     return inp({ kind: 'Làm tròn', prompt: `Làm tròn số ${D(s)} đến ${name}.`, spec: num(val(r), '', r),
-      explain: `Xét chữ số ngay sau ${name}: ${s.split('.')[1][k]}. ${+s.split('.')[1][k] >= 5 ? 'Chữ số đó ≥ 5 nên làm tròn lên' : 'Chữ số đó < 5 nên làm tròn xuống'} → ${D(r)}.` }); },
+      explain: `Xét chữ số ngay sau ${name}: ${s.split('.')[1][k]}. ${+s.split('.')[1][k] >= 5 ? 'Chữ số đó ≥ 5 nên làm tròn lên' : 'Chữ số đó &lt; 5 nên làm tròn xuống'} → ${D(r)}.` }); },
   () => { const k = R.int(1, 2), base = R.int(10, 99), units = base * 10 + R.int(1, 9), s = unitsToDec(units, k + 1), lo = unitsToDec(base, k), hi = unitsToDec(base + 1, k), r = roundDec(s, k);
     return sel({ prompt: `Quan sát tia số. Làm tròn ${D(s)} đến ${k === 1 ? 'hàng phần mười' : 'hàng phần trăm'} ta được số nào?`,
       ctx: vLine({ from: lo, to: hi, ticks: 10, labels: [lo, hi], points: [{ v: s, label: fmtDec(s) }] }),
-      correct: fmtDec(r), wrong: uniqBy([r === lo ? hi : lo, s, roundDec(s, k - 1)].filter(x => val(x) !== val(r)), val).map(fmtDec),
+      correct: fmtDec(r), wrong: uniqBy([r === lo ? hi : lo, s, roundDec(s, k - 1), unitsToDec(base + 2, k), unitsToDec(base - 1, k)].filter(x => val(x) !== val(r)), val).map(fmtDec),
       explain: units % 10 === 5 ? `${D(s)} cách đều ${D(lo)} và ${D(hi)}. Quy ước: làm tròn lên → ${D(r)}.` : `${D(s)} gần ${D(r)} hơn → ${D(r)}.` }); },
-  () => { const i = R.int(1, 40), t = R.pick([[5, true], [5, false], [4, false], [6, true]]), s = `${i}.${t[0]}`, claim = t[1] ? i + 1 : i, ok = val(roundDec(s, 0)) === claim;
+  () => { const i = R.int(1, 40), dg = R.pick([3, 4, 5, 5, 6, 7]), s = `${i}.${dg}`, r = +roundDec(s, 0), claim = R.chance(.5) ? r : (r === i ? i + 1 : i), ok = claim === r;
     return tf({ prompt: `Làm tròn ${D(s)} đến hàng đơn vị được ${claim}.`, answer: ok,
-      explain: `${D(s)} → ${roundDec(s, 0)}. ${t[0] === 5 ? `${D(s)} cách đều ${i} và ${i + 1}; quy ước làm tròn lên thành ${i + 1}.` : ''}` }); },
-  () => { const T = R.pick([['Quãng đường từ khu A đến khu B dài', 'km'], ['Bạn Minh cao', 'm'], ['Quả dưa hấu cân nặng', 'kg'], ['Bể nước chứa', 'l']]);
-    const s = T[1] === 'm' ? randDec(1, 1, 2) : randDec(2, 30, R.int(1, 2)), r = roundDec(s, 0);
-    return inp({ kind: 'Làm tròn', prompt: `${T[0]} ${D(s)} ${T[1]}. Làm tròn số đo đó đến hàng đơn vị.`, spec: num(val(r), T[1], r), explain: `${D(s)} làm tròn đến hàng đơn vị được ${D(r)} ${T[1]}.` }); },
+      explain: `Chữ số hàng phần mười là ${dg} ${dg >= 5 ? '≥ 5 nên làm tròn lên' : '&lt; 5 nên làm tròn xuống'}: ${D(s)} → ${r}.${dg === 5 ? ` (${D(s)} cách đều ${i} và ${i + 1}; quy ước làm tròn lên.)` : ''}` }); },
+  () => { const T = R.pick([['Quãng đường từ khu A đến khu B dài', 'km', 0], ['Bạn Minh cao', 'm', 1], ['Quả dưa hấu cân nặng', 'kg', 0], ['Bể nước chứa', 'l', 0], ['Mẹ của Hà cao', 'm', 1]]);
+    const s = T[2] ? randDec(1, 1, 2) : randDec(2, 30, R.int(1, 2)), r = roundDec(s, T[2]), place = T[2] ? 'hàng phần mười' : 'hàng đơn vị';
+    return inp({ kind: 'Làm tròn', prompt: `${T[0]} ${D(s)} ${T[1]}. Làm tròn số đo đó đến ${place}.`, spec: num(val(r), T[1], r), explain: `${D(s)} làm tròn đến ${place} được ${D(r)} ${T[1]}.` }); },
   () => { const target = R.int(2, 30); let cands = [];
     for (let tries = 0; cands.length < 8 && tries < 100; tries++) cands.push(R.pick([`${target - 1}.${R.int(5, 9)}`, `${target}.${R.int(0, 4)}`, `${target - 1}.4${R.int(0, 9)}`, `${target}.5${R.int(0, 9)}`, `${target}.${R.int(5, 9)}`, `${target - 1}.${R.int(0, 4)}`]));
     cands = uniqBy(cands, x => x); const good = cands.filter(c => +roundDec(c, 0) === target), bad = cands.filter(c => +roundDec(c, 0) !== target);

@@ -121,6 +121,19 @@ check('Bài 18 order', () => {
     for (let k = 1; k < vals.length; k++) assert.ok(q.prompt.includes('bé đến lớn') ? vals[k] > vals[k - 1] : vals[k] < vals[k - 1], `order ${q.items} ${q.answer}`);
   }
 });
+const fracs = html => [...html.matchAll(/<span class="fr"><span>([\d ]+)<\/span><span>([\d ]+)<\/span><\/span>/g)].map(m => [+m[1].replace(/ /g, ''), +m[2].replace(/ /g, '')]);
+check('Bài 12: exactly one decimal-fraction option', () => {
+  for (let i = 0; i < RUNS; i++) { const q = MG._gens.L12[0](); const n = q.options.filter(o => MG.isPow10(fracs(o)[0][1])).length; assert.strictEqual(n, 1, q.options.join(' | ')); }
+});
+check('Bài 7: no option is the answer pair reversed', () => {
+  for (let i = 0; i < RUNS; i++) { const q = MG._gens.L7[3](); const [a, b] = q.options[q.answer].split(' và '); assert.ok(!q.options.includes(`${b} và ${a}`), q.options.join(' | ')); }
+});
+check('Bài 11: match pairs have distinct values', () => {
+  for (let i = 0; i < RUNS; i++) { const q = MG._gens.L11[6](); const v = q.right.map(r => { const [[n, d]] = fracs(r); return n / d; }); assert.strictEqual(new Set(v).size, v.length, q.right.join(' | ')); }
+});
+check('multiple choice always offers 4 options', () => {
+  for (const L of MG.LESSONS) L.gens.forEach((g, gi) => { for (let i = 0; i < 100; i++) { const q = g(); if (q.type === 'select' && q.options.length < 3) throw new Error(`Bài ${L.id} gen ${gi}: ${q.options.length} options`); } });
+});
 check('buildRound', () => {
   const qs = MG.buildRound([6, 7, 8], 10); assert.strictEqual(qs.length, 10); qs.forEach(q => assert.ok(q.src && q.lesson));
 });
